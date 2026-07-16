@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>極致旅遊共同規劃 App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* 隱藏滾動條但保留滾動功能 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #EFE6DD; /* 暖沙褐底色 */
+    }
+  </style>
+</head>
+<body class="text-stone-800 flex flex-col items-center min-h-screen py-4 md:py-8 px-4">
+
+  <!-- 手動切換平板/手機版控制器 -->
+  <div class="flex items-center gap-3 mb-6 bg-[#E5D7CA] p-1.5 rounded-2xl border border-[#D2C1B0]">
+    <span class="text-xs font-bold text-stone-600 px-2.5">手動切換版面：</span>
+    <button onclick="setDeviceMode('mobile')" id="btn-device-mobile" class="px-4 py-2 rounded-xl font-bold text-xs bg-[#C85C42] text-white shadow-sm transition-all duration-200">
+      <i class="fa-solid fa-mobile-screen-button mr-1"></i> 手機模式 📱
+    </button>
+    <button onclick="setDeviceMode('tablet')" id="btn-device-tablet" class="px-4 py-2 rounded-xl font-bold text-xs bg-transparent text-stone-600 hover:bg-[#DBCABA] transition-all duration-200">
+      <i class="fa-solid fa-tablet-screen-button mr-1"></i> 平板雙欄模式 📟
+    </button>
+  </div>
+
+  <!-- 主容器：燕麥棉色底 (#FAF0E6)，絕不留白 -->
+  <div id="app-container" class="w-full max-w-md bg-[#FAF0E6] shadow-2xl rounded-3xl flex flex-col relative overflow-hidden min-h-[750px] md:min-h-[820px] pb-24 border border-[#E5D7CA] transition-all duration-300">
+    
+    <!-- 頂部 Header：點擊標題區可直接修改名稱 -->
+    <header class="bg-[#2B3E51] text-[#FFF9F3] p-5 flex justify-between items-center sticky top-0 z-50 shadow-md border-b border-[#1E2B38]">
+      <div onclick="openModal('trip-info')" class="cursor-pointer hover:bg-stone-800/20 p-1.5 rounded-xl transition-all" title="點擊編輯旅程資訊">
+        <h1 class="font-bold text-lg md:text-xl flex items-center gap-2 tracking-wide text-[#FFF9F3]">
+          <i class="fa-solid fa-plane-departure text-[#D99C52]"></i> <span id="header-trip-title">北國猛男哈米達</span>
+          <i class="fa-solid fa-pen text-[10px] text-stone-400"></i>
+        </h1>
+        <p class="text-xs text-stone-300 mt-1" id="header-trip-subtitle">2026 釜山・濟州 15日遊</p>
+      </div>
+      <div class="flex flex-col items-end gap-1.5">
+        <div class="flex items-center gap-2">
+          <button onclick="openModal('members-mgr')" class="text-[10px] font-bold bg-[#3A5066] hover:bg-[#4E6B88] text-white px-2 py-1 rounded-md border border-[#4E6B88]" title="管理成員">
+            <i class="fa-solid fa-users-gear"></i> 成員
+          </button>
+          <div class="flex -space-x-1.5" id="member-avatars"></div>
+          <div class="w-8 h-8 rounded-full border-2 border-[#D99C52] overflow-hidden" id="current-user-avatar-indicator">
+            <img src="" alt="" id="current-user-avatar-img">
+          </div>
+        </div>
+        <select id="current-user-select" class="bg-[#1E2B38] text-xs rounded-lg px-2.5 py-1 border border-[#3A5066] focus:outline-none focus:ring-1 focus:ring-[#D99C52] text-stone-200" onchange="switchUser(this.value)">
+          <!-- JS 動態生成 -->
+        </select>
+      </div>
+    </header>
+
+    <!-- 主區塊：內部可自適應分為左右兩欄 (平板模式) -->
+    <main class="flex-1 overflow-y-auto p-5 no-scrollbar flex flex-col" id="main-content">
+      
+      <!-- 【左側區域】天數、天氣、當日行程 -->
+      <div id="left-section-panel" class="w-full space-y-5 flex-none">
+        
+        <!-- 動態 15 天切換滾動條 -->
+        <div class="flex gap-2.5 overflow-x-auto no-scrollbar py-1" id="day-tabs-container">
+          <!-- JS 動態生成 -->
+        </div>
+
+        <!-- 氣象資訊卡：靛藍漸層 -->
+        <div class="bg-gradient-to-br from-[#2B3E51] to-[#405A75] text-white rounded-2xl p-5 shadow-sm relative border border-[#1E2B38]">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] bg-[#C85C42] text-white font-bold px-2.5 py-1 rounded-full tracking-wider" id="weather-city">BUSAN CITY</span>
+              <h2 class="text-xl font-bold mt-2.5" id="weather-desc">晴朗無雲</h2>
+            </div>
+            <div class="text-right">
+              <span class="text-3xl font-extrabold tracking-tight" id="weather-temp">13°</span>
+              <p class="text-xs text-stone-300 mt-1">5° / 13°</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-4 gap-2 mt-5 text-center text-xs border-t border-white/10 pt-4">
+            <div><p class="text-stone-300 mb-0.5">降雨率</p><p class="font-bold">0%</p></div>
+            <div><p class="text-stone-300 mb-0.5">風力</p><p class="font-bold">2級</p></div>
+            <div><p class="text-stone-300 mb-0.5">日出</p><p class="font-bold">06:45</p></div>
+            <div><p class="text-stone-300 mb-0.5">倒數</p><p class="font-bold text-[#D99C52]">91天</p></div>
+          </div>
+          <div class="mt-4 bg-[#1E2B38]/60 rounded-xl p-3 text-xs flex gap-2.5 items-center border border-white/5">
+            <i class="fa-solid fa-shirt text-[#D99C52] text-sm"></i>
+            <p id="weather-advice" class="text-stone-200 leading-relaxed">抵達首日天氣晴朗，早晚溫差大，建議洋蔥式穿搭。</p>
+          </div>
+        </div>
+
+        <!-- 當日行程列表：暖杏白 (#FFF9F3)，拒絕純白 -->
+        <div class="bg-[#FFF9F3] rounded-2xl p-5 shadow-sm border border-[#EADBC8]">
+          <div class="flex justify-between items-center mb-5">
+            <h3 class="font-bold text-stone-800 text-base"><i class="fa-solid fa-calendar-day mr-2 text-[#C85C42]"></i> 當日行程</h3>
+            <button onclick="openModal('itinerary')" class="text-[11px] font-bold bg-[#C85C42] hover:bg-[#B34E37] text-[#FFF9F3] px-3.5 py-2 rounded-full transition-colors duration-200"><i class="fa-solid fa-plus mr-1"></i> 新增行程</button>
+          </div>
+          <div class="relative border-l-2 border-[#EADBC8] pl-5 ml-2.5 space-y-6" id="itinerary-list">
+            <!-- JS 渲染 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 【右側區域】收納 預訂 / 記帳 / 日誌 / 準備 欄位 (平板模式下常駐於右側) -->
+      <div id="right-section-panel" class="w-full space-y-5 flex-1 hidden md:block">
+        
+        <!-- 預訂分頁 -->
+        <section id="tab-reservations" class="space-y-4">
+          <div class="flex gap-2 bg-[#EADBC8]/40 p-1 rounded-xl border border-[#EADBC8]/60">
+            <button id="sub-res-flight-btn" onclick="switchResSubTab('flight', this)" class="res-sub-btn flex-1 py-1.5 text-xs font-bold rounded-lg bg-[#FFF9F3] text-[#C85C42] shadow-sm transition-all">機票</button>
+            <button id="sub-res-hotel-btn" onclick="switchResSubTab('hotel', this)" class="res-sub-btn flex-1 py-1.5 text-xs font-bold rounded-lg text-stone-500 transition-all">住宿</button>
+            <button id="sub-res-car-btn" onclick="switchResSubTab('car', this)" class="res-sub-btn flex-1 py-1.5 text-xs font-bold rounded-lg text-stone-500 transition-all">租車</button>
+          </div>
+
+          <!-- 預訂: 機票卡片 -->
+          <div id="res-flight" class="res-card space-y-3">
+            <div class="bg-[#FFF9F3] rounded-2xl p-5 shadow-sm border border-[#EADBC8]">
+              <div class="flex justify-between items-center border-b border-[#EADBC8]/60 pb-3 mb-4">
+                <span class="text-xs font-bold text-[#C85C42] bg-[#FDECE8] px-3 py-1 rounded-md border border-[#F5D5CE]" id="card-flight-code">釜山航空 BX 796</span>
+                <span class="text-xs text-stone-400 font-medium" id="card-flight-date">2026/03/10</span>
+              </div>
+              <div class="flex justify-between items-center text-center py-2">
+                <div>
+                  <span class="text-2xl font-extrabold text-stone-800 tracking-tight" id="card-flight-dep">KHH</span>
+                  <p class="text-xs text-stone-500 mt-1" id="card-flight-deptime">高雄 15:00</p>
+                </div>
+                <div class="flex-1 px-4 relative flex flex-col items-center">
+                  <span class="text-[10px] text-stone-400 font-medium" id="card-flight-duration">02h 25m</span>
+                  <div class="w-full border-t border-dashed border-[#EADBC8] my-2 relative">
+                    <i class="fa-solid fa-plane text-[#C85C42] absolute -top-2 left-1/2 -translate-x-1/2 bg-[#FFF9F3] px-2 text-sm"></i>
+                  </div>
+                </div>
+                <div>
+                  <span class="text-2xl font-extrabold text-stone-800 tracking-tight" id="card-flight-arr">PUS</span>
+                  <p class="text-xs text-stone-500 mt-1" id="card-flight-arrtime">釜山 18:25</p>
+                </div>
+              </div>
+              <div class="mt-4 pt-3.5 border-t border-[#EADBC8]/60 grid grid-cols-2 gap-3 text-xs text-stone-600">
+                <div class="flex items-center gap-2"><i class="fa-solid fa-suitcase text-stone-400"></i> 行李: <span id="card-flight-luggage">15kg</span></div>
+                <div class="flex items-center gap-2"><i class="fa-solid fa-money-bill-wave text-stone-400"></i> NT$ <span id="card-flight-price">4,633</span></div>
+              </div>
+              <button onclick="openModal('edit-res-flight')" class="w-full mt-4 text-xs font-bold py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl transition-all"><i class="fa-solid fa-pen-to-square"></i> 編輯機票資訊</button>
+            </div>
+          </div>
+
+          <!-- 預訂: 住宿卡片 -->
+          <div id="res-hotel" class="res-card space-y-3 hidden">
+            <div class="bg-[#FFF9F3] rounded-2xl p-5 shadow-sm border border-[#EADBC8] overflow-hidden">
+              <img id="card-hotel-img" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=60" alt="Hotel" class="w-full h-36 object-cover rounded-xl mb-4">
+              <h4 class="font-bold text-stone-800 text-lg" id="card-hotel-name">Avani Central Busan</h4>
+              <p class="text-xs text-stone-500 mt-1 flex items-center gap-1.5"><i class="fa-solid fa-location-dot text-[#C85C42]"></i> <span id="card-hotel-loc">133 Jeonpo-daero, Nam-gu</span></p>
+              <div class="grid grid-cols-2 gap-3 text-xs border-t border-[#EADBC8]/60 pt-3.5 mt-4 text-stone-600">
+                <div><strong class="text-stone-400 block mb-0.5">入住：</strong><span id="card-hotel-checkin">03/10 15:00</span></div>
+                <div><strong class="text-stone-400 block mb-0.5">退房：</strong><span id="card-hotel-checkout">03/16 11:00</span></div>
+              </div>
+              <div class="bg-[#FAF4EE] border border-[#EEDCC8] rounded-xl p-3.5 mt-4 text-xs text-[#C85C42] flex justify-between items-center">
+                <span>總額：NT$ <span id="card-hotel-total">5,000</span></span>
+                <span class="font-bold bg-[#FFF9F3] px-2.5 py-1 rounded-lg border border-[#EEDCC8]">每人分攤：NT$ <span id="card-hotel-per">1,667</span></span>
+              </div>
+              <button onclick="openModal('edit-res-hotel')" class="w-full mt-4 text-xs font-bold py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl transition-all"><i class="fa-solid fa-pen-to-square"></i> 編輯住宿資訊</button>
+            </div>
+          </div>
+
+          <!-- 預訂: 租車卡片 -->
+          <div id="res-car" class="res-card space-y-3 hidden">
+            <div class="bg-[#FFF9F3] rounded-2xl p-5 shadow-sm border border-[#EADBC8]">
+              <div class="flex justify-between items-center border-b border-[#EADBC8]/60 pb-3 mb-4">
+                <span class="font-bold text-stone-800" id="card-car-name">樂天租車</span>
+                <span class="text-xs bg-[#FAF4EE] text-[#C85C42] font-semibold px-2.5 py-1 rounded-lg border border-[#EEDCC8]" id="card-car-no">預約號: RWJD-5223</span>
+              </div>
+              <div class="space-y-3 text-xs text-stone-600">
+                <p class="flex items-center gap-2"><i class="fa-solid fa-calendar text-stone-400 w-4"></i> <strong>取車：</strong><span id="card-car-pickup">2026/03/10 15:30 (濟州)</span></p>
+                <p class="flex items-center gap-2"><i class="fa-solid fa-calendar text-stone-400 w-4"></i> <strong>還車：</strong><span id="card-car-dropoff">2026/03/24 08:00 (濟州)</span></p>
+              </div>
+              <div class="bg-[#FAF4EE] rounded-xl p-3.5 mt-4 text-xs text-[#C85C42] flex justify-between items-center border border-[#EEDCC8]">
+                <span>總金：<span id="card-car-total">₩50,000 (≈ NT$1,200)</span></span>
+                <span class="font-bold bg-[#FFF9F3] px-2 py-0.5 rounded border border-[#EEDCC8]" id="card-car-per">人均：NT$ 300</span>
+              </div>
+              <button onclick="openModal('edit-res-car')" class="w-full mt-4 text-xs font-bold py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-xl transition-all"><i class="fa-solid fa-pen-to-square"></i> 編輯租車資訊</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 記帳分頁 -->
+        <section id="tab-expenses" class="space-y-4 hidden">
+          <div class="bg-[#FFF9F3] rounded-2xl p-5 shadow-sm border border-[#EADBC8]">
+            <h3 class="font-bold text-stone-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-calculator text-[#C85C42]"></i> 新增消費</h3>
+            <div class="space-y-3">
+              <div class="flex gap-2.5">
+                <input type="number" id="exp-amount" placeholder="金額" class="flex-1 bg-[#FFF9F3] border border-[#EADBC8] rounded-xl px-4 py-2.5 text-sm focus:ring-1 focus:ring-[#C85C42] focus:outline-none">
+                <select id="exp-currency" class="border border-[#EADBC8] rounded-xl px-3 py-2.5 text-sm focus:outline-none bg-[#FAF4EE] text-stone-700 font-medium">
+                  <option value="KRW">KRW 韓元</option>
+                  <option value="TWD">TWD 台幣</option>
+                </select>
+              </div>
+              <input type="text" id="exp-title" placeholder="品項名稱" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl px-4 py-2.5 text-sm focus:ring-1 focus:ring-[#C85C42] focus:outline-none">
+              <div class="flex gap-2.5">
+                <input type="text" id="exp-location" placeholder="地點 (如：GS25)" class="flex-1 bg-[#FFF9F3] border border-[#EADBC8] rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#C85C42]">
+                <select id="exp-pay-type" class="border border-[#EADBC8] rounded-xl px-3 py-2.5 text-xs bg-[#FAF4EE] text-stone-700 focus:outline-none font-medium">
+                  <option value="現金">現金</option>
+                  <option value="信用卡">信用卡</option>
+                  <option value="WOWPASS">WOWPASS</option>
+                </select>
+              </div>
+              <button onclick="addExpense()" class="w-full bg-[#C85C42] hover:bg-[#B34E37] text-white font-bold py-2.5 rounded-xl text-sm transition-colors shadow-sm">記一筆</button>
+            </div>
+          </div>
+
+          <div class="bg-[#FFF9F3] rounded-2xl p-5 shadow-sm border border-[#EADBC8]">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-[#EADBC8]/60">
+              <h4 class="font-bold text-stone-800 text-sm">消費明細</h4>
+              <div class="text-right">
+                <p class="text-[10px] text-stone-400 font-semibold">總支出折合</p>
+                <p class="text-lg font-black text-[#C85C42]" id="total-expense-display">NT$ 0</p>
+              </div>
+            </div>
+            <div class="space-y-4 max-h-[250px] overflow-y-auto no-scrollbar" id="expense-list">
+              <!-- JS 渲染 -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 日誌分頁 -->
+        <section id="tab-journal" class="space-y-4 hidden">
+          <div class="bg-[#FFF9F3] rounded-2xl p-5 shadow-sm border border-[#EADBC8]">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-bold text-stone-800 text-sm"><i class="fa-solid fa-pen-to-square text-[#C85C42] mr-2"></i> 旅行日誌</h3>
+              <button onclick="openModal('journal')" class="text-[11px] font-bold bg-[#C85C42] hover:bg-[#B34E37] text-white px-3.5 py-1.5 rounded-full transition-colors duration-200"><i class="fa-solid fa-plus mr-1"></i> 寫日誌</button>
+            </div>
+            <div class="space-y-4 max-h-[400px] overflow-y-auto no-scrollbar" id="journal-list">
+              <!-- JS 渲染 -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 準備清單分頁 -->
+        <section id="tab-checklist" class="space-y-4 hidden">
+          <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+            <button onclick="switchChecklistSub('todo', this)" class="check-sub-btn flex-none px-4 py-1.5 text-xs font-bold rounded-full bg-[#FAF4EE] text-[#C85C42] border border-[#EEDCC8] transition-all">特辦待辦</button>
+            <button onclick="switchChecklistSub('pack', this)" class="check-sub-btn flex-none px-4 py-1.5 text-xs font-bold rounded-full bg-stone-100 text-stone-500 border border-transparent transition-all">行李清單</button>
+            <button onclick="switchChecklistSub('wish', this)" class="check-sub-btn flex-none px-4 py-1.5 text-xs font-bold rounded-full bg-stone-100 text-stone-500 border border-transparent transition-all">想去地點</button>
+          </div>
+
+          <div class="flex gap-2">
+            <input type="text" id="new-todo-input" placeholder="新增品項..." class="flex-1 bg-[#FFF9F3] border border-[#EADBC8] rounded-xl px-4 py-2.5 text-sm focus:ring-1 focus:ring-[#C85C42] focus:outline-none">
+            <button onclick="addChecklistItem()" class="bg-[#C85C42] hover:bg-[#B34E37] text-white px-4 rounded-xl text-sm font-bold transition-colors"><i class="fa-solid fa-plus"></i></button>
+          </div>
+
+          <div class="bg-[#FFF9F3] rounded-2xl p-5 shadow-sm border border-[#EADBC8]">
+            <ul id="checklist-container" class="space-y-3.5">
+              <!-- JS 渲染 -->
+            </ul>
+          </div>
+        </section>
+
+      </div>
+
+    </main>
+
+    <!-- 底部導覽列 -->
+    <nav class="absolute bottom-0 left-0 right-0 bg-[#FFF9F3] border-t border-[#E5D7CA] flex justify-around py-3.5 px-3 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.02)]">
+      <button onclick="switchTab('itinerary', this)" class="nav-btn flex flex-col items-center gap-1.5 text-[#C85C42] transition-all duration-200">
+        <i class="fa-solid fa-compass text-lg"></i>
+        <span class="text-[10px] font-bold tracking-wide">行程</span>
+      </button>
+      <button onclick="switchTab('reservations', this)" class="nav-btn flex flex-col items-center gap-1.5 text-stone-400 hover:text-stone-600 transition-all duration-200">
+        <i class="fa-solid fa-ticket text-lg"></i>
+        <span class="text-[10px] font-bold tracking-wide">預訂</span>
+      </button>
+      <button onclick="switchTab('expenses', this)" class="nav-btn flex flex-col items-center gap-1.5 text-stone-400 hover:text-stone-600 transition-all duration-200">
+        <i class="fa-solid fa-wallet text-lg"></i>
+        <span class="text-[10px] font-bold tracking-wide">記帳</span>
+      </button>
+      <button onclick="switchTab('journal', this)" class="nav-btn flex flex-col items-center gap-1.5 text-stone-400 hover:text-stone-600 transition-all duration-200">
+        <i class="fa-solid fa-book text-lg"></i>
+        <span class="text-[10px] font-bold tracking-wide">日誌</span>
+      </button>
+      <button onclick="switchTab('checklist', this)" class="nav-btn flex flex-col items-center gap-1.5 text-stone-400 hover:text-stone-600 transition-all duration-200">
+        <i class="fa-solid fa-clipboard-check text-lg"></i>
+        <span class="text-[10px] font-bold tracking-wide">準備</span>
+      </button>
+    </nav>
+
+    <!-- ================= EDIT MODALS 專區 ================= -->
+
+    <!-- Modal: 修改旅程基本資訊 -->
+    <div id="modal-trip-info" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-[#FFF9F3] w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-[#EADBC8]">
+        <h3 class="font-bold text-stone-800 text-base">編輯旅程資訊</h3>
+        <div>
+          <label class="block text-[10px] font-bold text-stone-400 mb-1">旅程標題</label>
+          <input type="text" id="edit-trip-title" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2.5 text-sm focus:ring-1">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-stone-400 mb-1">時間/副標題</label>
+          <input type="text" id="edit-trip-subtitle" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2.5 text-sm focus:ring-1">
+        </div>
+        <div class="flex gap-2.5 pt-2">
+          <button onclick="closeModal('trip-info')" class="flex-1 bg-stone-100 hover:bg-stone-200 py-2.5 rounded-xl text-xs font-bold text-stone-600">取消</button>
+          <button onclick="saveTripInfo()" class="flex-1 bg-[#C85C42] hover:bg-[#B34E37] text-white py-2.5 rounded-xl text-xs font-bold shadow-sm">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: 成員管理員 (新增/編輯/刪除成員) -->
+    <div id="modal-members-mgr" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-[#FFF9F3] w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl border border-[#EADBC8]">
+        <h3 class="font-bold text-stone-800 text-base">成員管理設定</h3>
+        <div class="max-h-[200px] overflow-y-auto space-y-2 no-scrollbar border-b border-[#EADBC8]/60 pb-4" id="members-list-mgr-container">
+          <!-- 成員列表與刪除 -->
+        </div>
+        <div class="pt-2 space-y-2">
+          <h4 class="text-xs font-bold text-stone-500">新增新成員</h4>
+          <div class="flex gap-2">
+            <input type="text" id="new-member-name" placeholder="名字" class="flex-1 bg-[#FFF9F3] border border-[#EADBC8] rounded-xl px-3 py-2 text-xs">
+            <select id="new-member-color" class="border border-[#EADBC8] rounded-xl px-2 py-2 text-xs bg-[#FAF4EE]">
+              <option value="bg-rose-500">紅桃</option>
+              <option value="bg-indigo-500">靛藍</option>
+              <option value="bg-amber-500">暖橘</option>
+              <option value="bg-emerald-700">墨綠</option>
+              <option value="bg-violet-500">紫羅蘭</option>
+            </select>
+            <button onclick="addNewMember()" class="bg-[#C85C42] text-white px-4 rounded-xl text-xs font-bold">新增</button>
+          </div>
+        </div>
+        <div class="flex pt-2">
+          <button onclick="closeModal('members-mgr')" class="w-full bg-stone-100 hover:bg-stone-200 py-2 rounded-xl text-xs font-bold text-stone-600">關閉</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: 行理新增或編輯模態 (共用) -->
+    <div id="modal-itinerary" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-[#FFF9F3] w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-[#EADBC8]">
+        <h3 class="font-bold text-stone-800 text-base" id="itinerary-modal-title">新增今日行程</h3>
+        <input type="hidden" id="editing-itinerary-index" value="-1">
+        <div>
+          <label class="block text-[10px] font-bold text-stone-400 mb-1">行程時間</label>
+          <input type="time" id="itinerary-time" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2.5 text-sm focus:ring-1 focus:ring-[#C85C42]">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-stone-400 mb-1">活動項目</label>
+          <input type="text" id="itinerary-title-input" placeholder="例：飛機起飛" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2.5 text-sm focus:ring-1 focus:ring-[#C85C42]">
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-stone-400 mb-1">備註 / 地點</label>
+          <input type="text" id="itinerary-desc" placeholder="例：小港機場" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2.5 text-sm focus:ring-1 focus:ring-[#C85C42]">
+        </div>
+        <div class="flex gap-2.5 pt-2">
+          <button onclick="closeModal('itinerary')" class="flex-1 bg-stone-100 hover:bg-stone-200 py-2.5 rounded-xl text-xs font-bold text-stone-600">取消</button>
+          <button onclick="saveItinerary()" class="flex-1 bg-[#C85C42] hover:bg-[#B34E37] text-white py-2.5 rounded-xl text-xs font-bold">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: 編輯機票預訂 -->
+    <div id="modal-edit-res-flight" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-[#FFF9F3] w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-[#EADBC8]">
+        <h3 class="font-bold text-stone-800 text-base">編輯機票資訊</h3>
+        <div class="space-y-2 max-h-[300px] overflow-y-auto no-scrollbar">
+          <input type="text" id="edit-flight-code" placeholder="航空公司及航班 (例：釜山航空 BX 796)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-flight-date" placeholder="日期 (例：2026/03/10)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-flight-dep" placeholder="出發地代碼 (例：KHH)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-flight-deptime" placeholder="出發時間 (例：高雄 15:00)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-flight-duration" placeholder="航程時間 (例：02h 25m)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-flight-arr" placeholder="目的地代碼 (例：PUS)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-flight-arrtime" placeholder="抵達時間 (例：釜山 18:25)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-flight-luggage" placeholder="行李限額 (例：15kg)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-flight-price" placeholder="價格 (例：4,633)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+        </div>
+        <div class="flex gap-2.5">
+          <button onclick="closeModal('edit-res-flight')" class="flex-1 bg-stone-100 hover:bg-stone-200 py-2 rounded-xl text-xs font-bold text-stone-600">取消</button>
+          <button onclick="saveFlightReservation()" class="flex-1 bg-[#C85C42] hover:bg-[#B34E37] text-white py-2 rounded-xl text-xs font-bold">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: 編輯住宿預訂 -->
+    <div id="modal-edit-res-hotel" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-[#FFF9F3] w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-[#EADBC8]">
+        <h3 class="font-bold text-stone-800 text-base">編輯住宿資訊</h3>
+        <div class="space-y-2 max-h-[300px] overflow-y-auto no-scrollbar">
+          <input type="text" id="edit-hotel-name" placeholder="飯店名稱" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-hotel-loc" placeholder="地址" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-hotel-checkin" placeholder="入住時間 (例：03/10 15:00)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-hotel-checkout" placeholder="退房時間 (例：03/16 11:00)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-hotel-total" placeholder="總額 (例：5,000)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-hotel-per" placeholder="每人分攤金額" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-hotel-img" placeholder="飯店封面圖片網址 (選填)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+        </div>
+        <div class="flex gap-2.5">
+          <button onclick="closeModal('edit-res-hotel')" class="flex-1 bg-stone-100 hover:bg-stone-200 py-2 rounded-xl text-xs font-bold text-stone-600">取消</button>
+          <button onclick="saveHotelReservation()" class="flex-1 bg-[#C85C42] hover:bg-[#B34E37] text-white py-2 rounded-xl text-xs font-bold">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: 編輯租車預訂 -->
+    <div id="modal-edit-res-car" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-[#FFF9F3] w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl border border-[#EADBC8]">
+        <h3 class="font-bold text-stone-800 text-base">編輯租車資訊</h3>
+        <div class="space-y-2">
+          <input type="text" id="edit-car-name" placeholder="租車公司" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-car-no" placeholder="預約號" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-car-pickup" placeholder="取車資訊" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-car-dropoff" placeholder="還車資訊" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-car-total" placeholder="總額 (例：₩50,000)" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+          <input type="text" id="edit-car-per" placeholder="每人分攤金額" class="w-full bg-[#FFF9F3] border border-[#EADBC8] rounded-xl p-2 text-xs">
+        </div>
+        <div class="flex gap-2.5">
+          <button onclick="closeModal('edit-res-car')" class="flex-1 bg-stone-100 hover:bg-stone-200 py-2 rounded-xl text-xs font-bold text-stone-600">取消</button>
+          <button onclick="saveCarReservation()" class="flex-1 bg-[#C85C42] hover:bg-[#B34E37] text-white py-2 rounded-xl text-xs font-bold">儲存</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ================= 初始化全前台自定義變數 =================
+    
+    // 1. 旅程資訊數據
+    let tripInfo = JSON.parse(localStorage.getItem('tripInfo')) || {
+      title: '北國猛男哈米達',
+      subtitle: '2026 釜山・濟州 15日遊'
+    };
+
+    // 2. 預訂卡片數據
+    let reservationData = JSON.parse(localStorage.getItem('reservationData')) || {
+      flight: { code: '釜山航空 BX 796', date: '2026/03/10', dep: 'KHH', depTime: '高雄 15:00', arr: 'PUS', arrTime: '釜山 18:25', duration: '02h 25m', luggage: '15kg', price: '4,633' },
+      hotel: { img: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=60', name: 'Avani Central Busan', loc: '133 Jeonpo-daero, Nam-gu', checkin: '03/10 15:00', checkout: '03/16 11:00', total: '5,000', perPerson: '1,667' },
+      car: { name: '樂天租車', resNo: 'RWJD-5223', pickup: '2026/03/10 15:30 (濟州)', dropoff: '2026/03/24 08:00 (濟州)', total: '₩50,000 (≈ NT$1,200)', perPerson: '300' }
+    };
+
+    // 3. 成員名單與連動色
+    let users = JSON.parse(localStorage.getItem('users')) || [
+      { name: '凱文', color: 'bg-rose-500', img: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Kevin' },
+      { name: '尼歐', color: 'bg-indigo-500', img: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Neo' },
+      { name: '小羊', color: 'bg-amber-500', img: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Lamb' },
+      { name: '大俠', color: 'bg-[#8B5A2B]', img: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Hero' }
+    ];
+
+    let currentUser = localStorage.getItem('currentUser') || '凱文';
+    let currentDay = 1;
+    let activeChecklistTab = 'todo';
+    let currentDevice = 'mobile'; // 'mobile' | 'tablet'
+
+    const KRW_TO_TWD = 0.024;
+
+    let itineraryData = JSON.parse(localStorage.getItem('itineraryData')) || {
+      1: [
+        { time: '12:00', title: '機場集合', desc: '小港機場 - 不要遲到，遲到的人要被遺棄' },
+        { time: '15:00', title: '飛機起飛', desc: '小港機場 - 釜山航空' },
+        { time: '18:25', title: '抵達釜山', desc: '釜山機場' },
+        { time: '19:00', title: '購買 WOWPASS', desc: '於地鐵站機台購買' }
+      ]
+    };
+
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [
+      { id: 1, user: '尼歐', title: '飲料', amount: 5000, currency: 'KRW', payType: '現金', date: '2026-03-10', location: 'GS25' },
+      { id: 2, user: '小羊', title: '早餐', amount: 7000, currency: 'KRW', payType: '信用卡', date: '2026-03-10', location: '外帶' }
+    ];
+
+    let journals = JSON.parse(localStorage.getItem('journals')) || [
+      { id: 1, user: '尼歐', text: '訂好濟州島住宿，超級期待！', date: '2026-03-08' },
+      { id: 2, user: '凱文', text: '申辦國際駕照搞定，這次換我當司機。', date: '2026-03-05' }
+    ];
+
+    let checklists = JSON.parse(localStorage.getItem('checklists')) || {
+      todo: [
+        { id: 1, title: '申辦國際駕照', checkedUsers: ['凱文', '尼歐'] },
+        { id: 2, title: '保旅遊平安險', checkedUsers: ['小羊'] }
+      ],
+      pack: [
+        { id: 3, title: 'RX100 相機', checkedUsers: ['凱文'] },
+        { id: 4, title: '電腦充電器', checkedUsers: ['尼歐'] }
+      ],
+      wish: [
+        { id: 5, title: '釜山海雲台烤肉', checkedUsers: [] }
+      ]
+    };
+
+    // ================= 核心初始載入 =================
+    window.onload = function() {
+      // 若 currentUser 因為被刪除而不在成員內，防呆重置
+      validateCurrentUser();
+      renderAllPreloadedData();
+      
+      // 自動偵測適配
+      if (window.innerWidth >= 768) {
+        setDeviceMode('tablet');
+      } else {
+        setDeviceMode('mobile');
+      }
+    };
+
+    function validateCurrentUser() {
+      const exists = users.some(u => u.name === currentUser);
+      if (!exists && users.length > 0) {
+        currentUser = users[0].name;
+        localStorage.setItem('currentUser', currentUser);
+      }
+    }
+
+    function renderAllPreloadedData() {
+      renderTripInfo();
+      renderDayTabs();
+      renderAvatars();
+      renderUserSelectDropdown();
+      updateCurrentUserIndicator();
+      renderItineraries();
+      renderReservationsCards();
+      renderExpenses();
+      renderJournals();
+      renderChecklist();
+    }
+
+    function saveData() {
+      localStorage.setItem('tripInfo', JSON.stringify(tripInfo));
+      localStorage.setItem('reservationData', JSON.stringify(reservationData));
+      localStorage.setItem('users', JSON.stringify(users));
+      localStorage.setItem('currentUser', currentUser);
+      localStorage.setItem('itineraryData', JSON.stringify(itineraryData));
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+      localStorage.setItem('journals', JSON.stringify(journals));
+      localStorage.setItem('checklists', JSON.stringify(checklists));
+    }
+
+    // ================= 1. 手動切換設備模式 =================
+    function setDeviceMode(mode) {
+      currentDevice = mode;
+      const appContainer = document.getElementById('app-container');
+      const mainContent = document.getElementById('main-content');
+      const leftPanel = document.getElementById('left-section-panel');
+      const rightPanel = document.getElementById('right-section-panel');
+      const btnMobile = document.getElementById('btn-device-mobile');
+      const btnTablet = document.getElementById('btn-device-tablet');
+
+      if (mode === 'mobile') {
+        appContainer.className = "w-full max-w-md bg-[#FAF0E6] shadow-2xl rounded-3xl flex flex-col relative overflow-hidden min-h-[750px] pb-24 border border-[#E5D7CA] transition-all duration-300";
+        mainContent.className = "flex-1 overflow-y-auto p-5 no-scrollbar flex flex-col";
+        leftPanel.className = "w-full space-y-5 flex-none";
+        rightPanel.className = "w-full space-y-5 flex-1 hidden";
+
+        if (btnMobile) btnMobile.className = "px-4 py-2 rounded-xl font-bold text-xs bg-[#C85C42] text-white shadow-sm transition-all duration-200";
+        if (btnTablet) btnTablet.className = "px-4 py-2 rounded-xl font-bold text-xs bg-transparent text-stone-600 hover:bg-[#DBCABA] transition-all duration-200";
+        
+        switchTab('itinerary', document.querySelector('.nav-btn'));
+      } else {
+        appContainer.className = "w-full max-w-4xl bg-[#FAF0E6] shadow-2xl rounded-3xl flex flex-col relative overflow-hidden min-h-[720px] pb-24 border border-[#E5D7CA] transition-all duration-300";
+        mainContent.className = "flex-1 overflow-y-auto p-5 no-scrollbar flex flex-row gap-6";
+        leftPanel.className = "w-[42%] space-y-5 flex-none border-r border-[#E5D7CA] pr-5";
+        rightPanel.className = "w-[58%] space-y-5 flex-1";
+
+        if (btnMobile) btnMobile.className = "px-4 py-2 rounded-xl font-bold text-xs bg-transparent text-stone-600 hover:bg-[#DBCABA] transition-all duration-200";
+        if (btnTablet) btnTablet.className = "px-4 py-2 rounded-xl font-bold text-xs bg-[#C85C42] text-white shadow-sm transition-all duration-200";
+        
+        switchTab('reservations', document.querySelectorAll('.nav-btn')[1]);
+      }
+    }
+
+    // ================= 2. 旅程標頭編輯 =================
+    function renderTripInfo() {
+      document.getElementById('header-trip-title').innerText = tripInfo.title;
+      document.getElementById('header-trip-subtitle').innerText = tripInfo.subtitle;
+    }
+
+    function saveTripInfo() {
+      const title = document.getElementById('edit-trip-title').value.trim();
+      const subtitle = document.getElementById('edit-trip-subtitle').value.trim();
+      if (!title) return alert('旅程標題不能留空！');
+      
+      tripInfo.title = title;
+      tripInfo.subtitle = subtitle;
+      saveData();
+      renderTripInfo();
+      closeModal('trip-info');
+    }
+
+    // ================= 3. 成員管理系統 (新增與刪除) =================
+    function renderUserSelectDropdown() {
+      const select = document.getElementById('current-user-select');
+      select.innerHTML = users.map(u => `<option value="${u.name}" ${u.name === currentUser ? 'selected' : ''}>${u.name}</option>`).join('');
+    }
+
+    function renderAvatars() {
+      const container = document.getElementById('member-avatars');
+      container.innerHTML = users.map(u => `
+        <div class="w-6 h-6 rounded-full border border-[#FFF9F3] overflow-hidden ${u.color} shadow-sm" title="${u.name}">
+          <img src="${u.img}" alt="${u.name}">
+        </div>
+      `).join('');
+    }
+
+    function updateCurrentUserIndicator() {
+      const user = users.find(u => u.name === currentUser);
+      if (!user) return;
+      const indicatorImg = document.getElementById('current-user-avatar-img');
+      const indicatorBg = document.getElementById('current-user-avatar-indicator');
+      indicatorImg.src = user.img;
+      indicatorBg.className = `w-8 h-8 rounded-full border-2 border-[#D99C52] overflow-hidden shadow-inner ${user.color}`;
+    }
+
+    function switchUser(userName) {
+      currentUser = userName;
+      saveData();
+      updateCurrentUserIndicator();
+      renderChecklist(); 
+      renderJournals();
+    }
+
+    function renderMembersManagerList() {
+      const container = document.getElementById('members-list-mgr-container');
+      container.innerHTML = users.map(u => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF4EE] border border-[#EEDCC8]">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full ${u.color}"></span>
+            <span class="text-xs font-bold text-stone-700">${u.name}</span>
+          </div>
+          <button onclick="removeMember('${u.name}')" class="text-[10px] bg-rose-100 hover:bg-rose-200 text-rose-600 px-2.5 py-1 rounded-md transition-colors"><i class="fa-solid fa-user-minus"></i> 刪除</button>
+        </div>
+      `).join('');
+    }
+
+    function addNewMember() {
+      const nameInput = document.getElementById('new-member-name');
+      const colorSelect = document.getElementById('new-member-color');
+      const name = nameInput.value.trim();
+      const color = colorSelect.value;
+
+      if (!name) return alert('請填寫名字！');
+      if (users.some(u => u.name === name)) return alert('成員名字不能重複！');
+
+      users.push({
+        name: name,
+        color: color,
+        img: `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`
+      });
+
+      saveData();
+      nameInput.value = '';
+      renderAllPreloadedData();
+      renderMembersManagerList();
+    }
+
+    function removeMember(name) {
+      if (users.length <= 1) return alert('至少需保留一名旅伴！');
+      if (confirm(`確定要將「${name}」從本旅程移出嗎？移出後其已簽核之待辦狀態會移除。`)) {
+        users = users.filter(u => u.name !== name);
+        // 若刪除的是當前操作者，換成剩下的第一個
+        if (currentUser === name) {
+          currentUser = users[0].name;
+        }
+        
+        // 同步清理 checklist 中該成員的核取紀錄
+        Object.keys(checklists).forEach(key => {
+          checklists[key].forEach(item => {
+            item.checkedUsers = item.checkedUsers.filter(u => u !== name);
+          });
+        });
+
+        saveData();
+        renderAllPreloadedData();
+        renderMembersManagerList();
+      }
+    }
+
+    // ================= 4. 行程自定義管理 =================
+    function switchDay(dayNum) {
+      currentDay = dayNum;
+      renderDayTabs();
+
+      if (dayNum >= 7) {
+        document.getElementById('weather-city').innerText = "JEJU ISLAND";
+        document.getElementById('weather-desc').innerText = "多雲時晴";
+        document.getElementById('weather-temp').innerText = "15°";
+        document.getElementById('weather-advice').innerText = "今日移動至濟州島，風力偏大，請注意頭部防風保暖。";
+      } else {
+        document.getElementById('weather-city').innerText = "BUSAN CITY";
+        document.getElementById('weather-desc').innerText = "晴朗無雲";
+        document.getElementById('weather-temp').innerText = "13°";
+        document.getElementById('weather-advice').innerText = "抵達首日天氣晴朗，早晚溫差大，建議洋蔥式穿搭。";
+      }
+      renderItineraries();
+    }
+
+    function renderDayTabs() {
+      const container = document.getElementById('day-tabs-container');
+      let tabsHtml = '';
+      const baseDate = new Date('2026-03-10');
+
+      for (let i = 1; i <= 15; i++) {
+        const currentDate = new Date(baseDate);
+        currentDate.setDate(baseDate.getDate() + (i - 1));
+        const month = currentDate.getMonth() + 1;
+        const date = currentDate.getDate();
+        
+        const isActive = i === currentDay;
+        const activeClass = isActive 
+          ? 'bg-[#C85C42] text-white shadow-md scale-105' 
+          : 'bg-[#FFF9F3] text-stone-500 border border-[#EADBC8] hover:bg-[#FAF0E6]';
+
+        tabsHtml += `
+          <button onclick="switchDay(${i})" class="day-btn flex-none w-14 py-2 rounded-xl text-center transition-all duration-200 ${activeClass}">
+            <span class="block text-[9px] uppercase font-bold tracking-wider ${isActive ? 'text-stone-100' : 'text-stone-400'}">Day ${i}</span>
+            <span class="block font-extrabold text-xs mt-0.5">${month}/${date}</span>
+          </button>
+        `;
+      }
+      container.innerHTML = tabsHtml;
+    }
+
+    function renderItineraries() {
+      const list = document.getElementById('itinerary-list');
+      const dayData = itineraryData[currentDay] || [];
+      if (dayData.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-6">
+            <i class="fa-solid fa-folder-open text-stone-300 text-2xl mb-2 block"></i>
+            <p class="text-xs text-stone-400">這天還沒有安排行程喔！</p>
+          </div>
+        `;
+        return;
+      }
+      list.innerHTML = dayData.map((item, idx) => `
+        <div class="relative group">
+          <div class="absolute -left-7 top-1.5 w-3 h-3 rounded-full bg-[#C85C42] border-2 border-[#FFF9F3] ring-4 ring-[#FAF0E6]"></div>
+          <div class="flex justify-between items-start gap-2">
+            <span class="text-[9px] font-bold text-[#C85C42] bg-[#FAF4EE] border border-[#EEDCC8] px-2 py-0.5 rounded-md">${item.time}</span>
+            <div class="flex gap-2 text-[10px]">
+              <button onclick="editItinerary(${idx})" class="text-stone-400 hover:text-[#C85C42]" title="編輯行程"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="deleteItinerary(${idx})" class="text-stone-400 hover:text-rose-500" title="刪除行程"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+          <h4 class="font-bold text-xs text-stone-800 mt-2">${item.title}</h4>
+          <p class="text-[11px] text-stone-500 mt-1 leading-relaxed">${item.desc}</p>
+        </div>
+      `).join('');
+    }
+
+    function editItinerary(index) {
+      const item = itineraryData[currentDay][index];
+      document.getElementById('itinerary-modal-title').innerText = '編輯行程內容';
+      document.getElementById('editing-itinerary-index').value = index;
+      document.getElementById('itinerary-time').value = item.time;
+      document.getElementById('itinerary-title-input').value = item.title;
+      document.getElementById('itinerary-desc').value = item.desc;
+      openModal('itinerary');
+    }
+
+    function deleteItinerary(index) {
+      if (confirm('確定要刪除這筆行程嗎？')) {
+        itineraryData[currentDay].splice(index, 1);
+        saveData();
+        renderItineraries();
+      }
+    }
+
+    function saveItinerary() {
+      const time = document.getElementById('itinerary-time').value;
+      const title = document.getElementById('itinerary-title-input').value.trim();
+      const desc = document.getElementById('itinerary-desc').value.trim();
+      const editingIndex = parseInt(document.getElementById('editing-itinerary-index').value);
+
+      if (!time || !title) return alert('請填寫完整行程時間與內容');
+
+      if (!itineraryData[currentDay]) itineraryData[currentDay] = [];
+      
+      const payload = { time, title, desc };
+
+      if (editingIndex === -1) {
+        // 新增
+        itineraryData[currentDay].push(payload);
+      } else {
+        // 編輯
+        itineraryData[currentDay][editingIndex] = payload;
+      }
+      
+      // 按時間重新排序
+      itineraryData[currentDay].sort((a, b) => a.time.localeCompare(b.time));
+
+      saveData();
+      renderItineraries();
+      closeModal('itinerary');
+
+      // 歸零模態框狀態
+      document.getElementById('itinerary-time').value = '';
+      document.getElementById('itinerary-title-input').value = '';
+      document.getElementById('itinerary-desc').value = '';
+      document.getElementById('editing-itinerary-index').value = -1;
+    }
+
+    // ================= 5. 預訂自定義管理 =================
+    function renderReservationsCards() {
+      // 1. 機票
+      const f = reservationData.flight;
+      document.getElementById('card-flight-code').innerText = f.code;
+      document.getElementById('card-flight-date').innerText = f.date;
+      document.getElementById('card-flight-dep').innerText = f.dep;
+      document.getElementById('card-flight-deptime').innerText = f.depTime;
+      document.getElementById('card-flight-duration').innerText = f.duration;
+      document.getElementById('card-flight-arr').innerText = f.arr;
+      document.getElementById('card-flight-arrtime').innerText = f.arrTime;
+      document.getElementById('card-flight-luggage').innerText = f.luggage;
+      document.getElementById('card-flight-price').innerText = f.price;
+
+      // 2. 住宿
+      const h = reservationData.hotel;
+      document.getElementById('card-hotel-img').src = h.img || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=60';
+      document.getElementById('card-hotel-name').innerText = h.name;
+      document.getElementById('card-hotel-loc').innerText = h.loc;
+      document.getElementById('card-hotel-checkin').innerText = h.checkin;
+      document.getElementById('card-hotel-checkout').innerText = h.checkout;
+      document.getElementById('card-hotel-total').innerText = h.total;
+      document.getElementById('card-hotel-per').innerText = h.perPerson;
+
+      // 3. 租車
+      const c = reservationData.car;
+      document.getElementById('card-car-name').innerText = c.name;
+      document.getElementById('card-car-no').innerText = `預約號: ${c.resNo}`;
+      document.getElementById('card-car-pickup').innerText = c.pickup;
+      document.getElementById('card-car-dropoff').innerText = c.dropoff;
+      document.getElementById('card-car-total').innerText = c.total;
+      document.getElementById('card-car-per').innerText = `人均：NT$ ${c.perPerson}`;
+    }
+
+    // 儲存預訂的細項
+    function saveFlightReservation() {
+      reservationData.flight = {
+        code: document.getElementById('edit-flight-code').value || '未填寫航班',
+        date: document.getElementById('edit-flight-date').value || '未填寫日期',
+        dep: document.getElementById('edit-flight-dep').value || 'DEP',
+        depTime: document.getElementById('edit-flight-deptime').value || '',
+        duration: document.getElementById('edit-flight-duration').value || '',
+        arr: document.getElementById('edit-flight-arr').value || 'ARR',
+        arrTime: document.getElementById('edit-flight-arrtime').value || '',
+        luggage: document.getElementById('edit-flight-luggage').value || '無說明',
+        price: document.getElementById('edit-flight-price').value || '0'
+      };
+      saveData();
+      renderReservationsCards();
+      closeModal('edit-res-flight');
+    }
+
+    function saveHotelReservation() {
+      reservationData.hotel = {
+        name: document.getElementById('edit-hotel-name').value || '未指定飯店',
+        loc: document.getElementById('edit-hotel-loc').value || '未填寫地址',
+        checkin: document.getElementById('edit-hotel-checkin').value || '',
+        checkout: document.getElementById('edit-hotel-checkout').value || '',
+        total: document.getElementById('edit-hotel-total').value || '0',
+        perPerson: document.getElementById('edit-hotel-per').value || '0',
+        img: document.getElementById('edit-hotel-img').value || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=60'
+      };
+      saveData();
+      renderReservationsCards();
+      closeModal('edit-res-hotel');
+    }
+
+    function saveCarReservation() {
+      reservationData.car = {
+        name: document.getElementById('edit-car-name').value || '未指定租車公司',
+        resNo: document.getElementById('edit-car-no').value || '',
+        pickup: document.getElementById('edit-car-pickup').value || '',
+        dropoff: document.getElementById('edit-car-dropoff').value || '',
+        total: document.getElementById('edit-car-total').value || '',
+        perPerson: document.getElementById('edit-car-per').value || ''
+      };
+      saveData();
+      renderReservationsCards();
+      closeModal('edit-res-car');
+    }
+
+    // ================= 6. 記帳系統編輯 =================
+    function renderExpenses() {
+      const container = document.getElementById('expense-list');
+      let totalTWD = 0;
+
+      container.innerHTML = expenses.map((exp, idx) => {
+        const valInTWD = exp.currency === 'KRW' ? Math.round(exp.amount * KRW_TO_TWD) : exp.amount;
+        totalTWD += valInTWD;
+        const userObj = users.find(u => u.name === exp.user) || { name: exp.user, color: 'bg-stone-500', img: `https://api.dicebear.com/7.x/adventurer/svg?seed=${exp.user}` };
+
+        return `
+          <div class="flex items-center justify-between border-b border-[#EADBC8]/40 pb-3 last:border-0 last:pb-0">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full overflow-hidden ${userObj.color} border border-stone-200">
+                <img src="${userObj.img}" alt="${exp.user}">
+              </div>
+              <div>
+                <p class="text-xs font-bold text-stone-800">${exp.title}</p>
+                <span class="text-[9px] text-stone-400 font-medium">${exp.user} · ${exp.payType} · ${exp.location || '一般'}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <div class="text-right">
+                <p class="text-xs font-extrabold text-stone-800">${exp.currency === 'KRW' ? '₩' : 'NT$'}${exp.amount.toLocaleString()}</p>
+                <p class="text-[9px] text-stone-400 font-semibold">≈ NT$ ${valInTWD.toLocaleString()}</p>
+              </div>
+              <button onclick="deleteExpense(${exp.id})" class="text-stone-400 hover:text-rose-500 text-xs" title="刪除記帳"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('total-expense-display').innerText = `NT$ ${totalTWD.toLocaleString()}`;
+    }
+
+    function addExpense() {
+      const amtInput = document.getElementById('exp-amount');
+      const titleInput = document.getElementById('exp-title');
+      const currency = document.getElementById('exp-currency').value;
+      const payType = document.getElementById('exp-pay-type').value;
+      const location = document.getElementById('exp-location').value;
+
+      if (!amtInput.value || !titleInput.value) return alert('請輸入金額與品項名稱！');
+
+      expenses.unshift({
+        id: Date.now(),
+        user: currentUser,
+        title: titleInput.value.trim(),
+        amount: parseFloat(amtInput.value),
+        currency: currency,
+        payType: payType,
+        location: location.trim(),
+        date: new Date().toISOString().split('T')[0]
+      });
+
+      saveData();
+      renderExpenses();
+
+      amtInput.value = '';
+      titleInput.value = '';
+      document.getElementById('exp-location').value = '';
+    }
+
+    function deleteExpense(id) {
+      if (confirm('確定要刪除這筆帳目嗎？')) {
+        expenses = expenses.filter(e => e.id !== id);
+        saveData();
+        renderExpenses();
+      }
+    }
+
+    // ================= 7. 日誌系統編輯 =================
+    function renderJournals() {
+      const container = document.getElementById('journal-list');
+      container.innerHTML = journals.map(j => {
+        const userObj = users.find(u => u.name === j.user) || { name: j.user, color: 'bg-stone-500', img: `https://api.dicebear.com/7.x/adventurer/svg?seed=${j.user}` };
+        return `
+          <div class="bg-[#FAF4EE]/50 rounded-xl p-3 border border-[#EADBC8]/60">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-6 h-6 rounded-full overflow-hidden ${userObj.color} border border-stone-200">
+                <img src="${userObj.img}" alt="">
+              </div>
+              <span class="text-xs font-bold text-stone-700">${j.user}</span>
+              <span class="text-[9px] font-medium text-stone-400 ml-auto">${j.date}</span>
+              <button onclick="deleteJournal(${j.id})" class="text-stone-400 hover:text-rose-500 text-[10px] pl-1" title="刪除日誌"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            <p class="text-[11px] text-stone-600 leading-relaxed font-normal">${j.text}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function saveJournal() {
+      const text = document.getElementById('journal-text').value;
+      if (!text.trim()) return alert('請輸入內容');
+
+      journals.unshift({
+        id: Date.now(),
+        user: currentUser,
+        text: text.trim(),
+        date: new Date().toISOString().split('T')[0]
+      });
+
+      saveData();
+      renderJournals();
+      closeModal('journal');
+      document.getElementById('journal-text').value = '';
+    }
+
+    function deleteJournal(id) {
+      if (confirm('確定要刪除這筆回憶日誌嗎？')) {
+        journals = journals.filter(j => j.id !== id);
+        saveData();
+        renderJournals();
+      }
+    }
+
+    // ================= 8. 準備清單編輯 =================
+    function renderChecklist() {
+      const container = document.getElementById('checklist-container');
+      const items = checklists[activeChecklistTab] || [];
+
+      if (items.length === 0) {
+        container.innerHTML = `<li class="text-center py-4 text-xs text-stone-400">目前沒有任何項目。</li>`;
+        return;
+      }
+
+      container.innerHTML = items.map(item => {
+        const isCheckedByMe = item.checkedUsers.includes(currentUser);
+        
+        const memberStatus = users.map(u => {
+          const isDone = item.checkedUsers.includes(u.name);
+          return `
+            <span class="text-[8px] font-bold px-2 py-0.5 rounded-md ${isDone ? 'bg-[#FDECE8] text-[#C85C42] border border-[#F5D5CE]' : 'bg-stone-100 text-stone-400'}">
+              ${isDone ? '✓' : '✗'} ${u.name}
+            </span>
+          `;
+        }).join('');
+
+        return `
+          <li class="flex flex-col gap-2 p-3 rounded-xl border border-[#EADBC8]/60 bg-[#FFF9F3] shadow-sm">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <input type="checkbox" ${isCheckedByMe ? 'checked' : ''} 
+                       onclick="toggleCheck(${item.id})"
+                       class="w-4 h-4 rounded text-[#C85C42] focus:ring-[#C85C42] border-[#EADBC8] cursor-pointer">
+                <span class="text-xs font-bold ${isCheckedByMe ? 'line-through text-stone-400' : 'text-stone-700'}">${item.title}</span>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="editChecklistItemText(${item.id})" class="text-stone-400 hover:text-[#C85C42] text-xs" title="編輯文字"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button onclick="deleteChecklistItem(${item.id})" class="text-stone-400 hover:text-rose-500 text-xs" title="刪除項目"><i class="fa-solid fa-trash-can"></i></button>
+              </div>
+            </div>
+            <div class="flex gap-1 flex-wrap">
+              ${memberStatus}
+            </div>
+          </li>
+        `;
+      }).join('');
+    }
+
+    function editChecklistItemText(id) {
+      const item = checklists[activeChecklistTab].find(i => i.id === id);
+      if (item) {
+        const newTitle = prompt('請修改品項名稱：', item.title);
+        if (newTitle !== null && newTitle.trim() !== '') {
+          item.title = newTitle.trim();
+          saveData();
+          renderChecklist();
+        }
+      }
+    }
+
+    // ================= 通用導覽、分頁、開關視窗邏輯 =================
+    function switchTab(tabId, btnElement) {
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('text-[#C85C42]');
+        b.classList.add('text-stone-400');
+      });
+      if (btnElement) {
+        btnElement.classList.add('text-[#C85C42]');
+        btnElement.classList.remove('text-stone-400');
+      }
+
+      const leftPanel = document.getElementById('left-section-panel');
+      const rightPanel = document.getElementById('right-section-panel');
+      document.querySelectorAll('#right-section-panel > section').forEach(sec => sec.classList.add('hidden'));
+
+      if (currentDevice === 'mobile') {
+        if (tabId === 'itinerary') {
+          leftPanel.classList.remove('hidden');
+          rightPanel.classList.add('hidden');
+        } else {
+          leftPanel.classList.add('hidden');
+          rightPanel.classList.remove('hidden');
+          const targetSec = document.getElementById('tab-' + tabId);
+          if (targetSec) targetSec.classList.remove('hidden');
+        }
+      } else {
+        leftPanel.classList.remove('hidden');
+        rightPanel.classList.remove('hidden');
+        
+        if (tabId === 'itinerary') {
+          const targetSec = document.getElementById('tab-checklist');
+          if (targetSec) targetSec.classList.remove('hidden');
+          document.querySelectorAll('.nav-btn').forEach((b, idx) => {
+            if(idx === 4) { b.classList.add('text-[#C85C42]'); b.classList.remove('text-stone-400'); }
+          });
+        } else {
+          const targetSec = document.getElementById('tab-' + tabId);
+          if (targetSec) targetSec.classList.remove('hidden');
+        }
+      }
+    }
+
+    function switchResSubTab(type, btnElement) {
+      document.querySelectorAll('.res-card').forEach(card => card.classList.add('hidden'));
+      document.getElementById('res-' + type).classList.remove('hidden');
+
+      document.querySelectorAll('.res-sub-btn').forEach(btn => {
+        btn.classList.remove('bg-[#FFF9F3]', 'text-[#C85C42]', 'shadow-sm');
+        btn.classList.add('text-stone-500');
+      });
+      btnElement.classList.add('bg-[#FFF9F3]', 'text-[#C85C42]', 'shadow-sm');
+    }
+
+    function switchChecklistSub(type, btnElement) {
+      activeChecklistTab = type;
+      document.querySelectorAll('.check-sub-btn').forEach(btn => {
+        btn.classList.remove('bg-[#FAF4EE]', 'text-[#C85C42]', 'border-[#EEDCC8]');
+        btn.classList.add('bg-stone-100', 'text-stone-500', 'border-transparent');
+      });
+      btnElement.classList.add('bg-[#FAF4EE]', 'text-[#C85C42]', 'border-[#EEDCC8]');
+      btnElement.classList.remove('bg-stone-100', 'text-stone-500', 'border-transparent');
+      renderChecklist();
+    }
+
+    function toggleCheck(id) {
+      const item = checklists[activeChecklistTab].find(i => i.id === id);
+      if (item) {
+        if (item.checkedUsers.includes(currentUser)) {
+          item.checkedUsers = item.checkedUsers.filter(u => u !== currentUser);
+        } else {
+          item.checkedUsers.push(currentUser);
+        }
+        saveData();
+        renderChecklist();
+      }
+    }
+
+    function addChecklistItem() {
+      const input = document.getElementById('new-todo-input');
+      if (!input.value.trim()) return;
+
+      checklists[activeChecklistTab].push({
+        id: Date.now(),
+        title: input.value.trim(),
+        checkedUsers: []
+      });
+
+      saveData();
+      renderChecklist();
+      input.value = '';
+    }
+
+    function deleteChecklistItem(id) {
+      if(confirm('確定要刪除此清單項目嗎？')){
+        checklists[activeChecklistTab] = checklists[activeChecklistTab].filter(i => i.id !== id);
+        saveData();
+        renderChecklist();
+      }
+    }
+
+    // Modal 控制器
+    function openModal(type) {
+      // 在開啟各編輯模態框時，自動預填目前的資料
+      if (type === 'trip-info') {
+        document.getElementById('edit-trip-title').value = tripInfo.title;
+        document.getElementById('edit-trip-subtitle').value = tripInfo.subtitle;
+      } else if (type === 'members-mgr') {
+        renderMembersManagerList();
+      } else if (type === 'edit-res-flight') {
+        const f = reservationData.flight;
+        document.getElementById('edit-flight-code').value = f.code;
+        document.getElementById('edit-flight-date').value = f.date;
+        document.getElementById('edit-flight-dep').value = f.dep;
+        document.getElementById('edit-flight-deptime').value = f.depTime;
+        document.getElementById('edit-flight-duration').value = f.duration;
+        document.getElementById('edit-flight-arr').value = f.arr;
+        document.getElementById('edit-flight-arrtime').value = f.arrTime;
+        document.getElementById('edit-flight-luggage').value = f.luggage;
+        document.getElementById('edit-flight-price').value = f.price;
+      } else if (type === 'edit-res-hotel') {
+        const h = reservationData.hotel;
+        document.getElementById('edit-hotel-name').value = h.name;
+        document.getElementById('edit-hotel-loc').value = h.loc;
+        document.getElementById('edit-hotel-checkin').value = h.checkin;
+        document.getElementById('edit-hotel-checkout').value = h.checkout;
+        document.getElementById('edit-hotel-total').value = h.total;
+        document.getElementById('edit-hotel-per').value = h.perPerson;
+        document.getElementById('edit-hotel-img').value = h.img;
+      } else if (type === 'edit-res-car') {
+        const c = reservationData.car;
+        document.getElementById('edit-car-name').value = c.name;
+        document.getElementById('edit-car-no').value = c.resNo;
+        document.getElementById('edit-car-pickup').value = c.pickup;
+        document.getElementById('edit-car-dropoff').value = c.dropoff;
+        document.getElementById('edit-car-total').value = c.total;
+        document.getElementById('edit-car-per').value = c.perPerson;
+      }
+      
+      document.getElementById('modal-' + type).classList.remove('hidden');
+    }
+
+    function closeModal(type) {
+      document.getElementById('modal-' + type).classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
