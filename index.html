@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>極致旅遊共同規劃 App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* 隱藏滾動條但保留滾動功能 */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  </style>
+</head>
+<body class="bg-[#F4F6F2] text-slate-800 flex justify-center min-h-screen">
+
+  <div class="w-full max-w-md bg-white shadow-2xl flex flex-col relative overflow-hidden min-h-screen pb-20">
+    
+    <header class="bg-[#2E5A44] text-white p-4 flex justify-between items-center sticky top-0 z-50">
+      <div>
+        <h1 class="font-bold text-lg flex items-center gap-1">
+          <i class="fa-solid fa-plane-departure text-amber-400"></i> 北國猛男哈米達
+        </h1>
+        <p class="text-xs text-emerald-200">2026 釜山・濟州 15日遊</p>
+      </div>
+      <div class="flex items-center gap-1">
+        <div class="flex -space-x-2" id="member-avatars">
+          </div>
+        <select id="current-user-select" class="bg-emerald-800 text-xs rounded px-1 py-0.5 border border-emerald-600 focus:outline-none" onchange="switchUser(this.value)">
+          <option value="凱文">凱文</option>
+          <option value="尼歐">尼歐</option>
+          <option value="小羊">小羊</option>
+          <option value="大俠">大俠</option>
+        </select>
+      </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar" id="main-content">
+      
+      <section id="tab-itinerary" class="space-y-4">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+          <button onclick="switchDay(1)" class="day-btn flex-none w-14 py-2 rounded-xl text-center bg-[#2E5A44] text-white shadow-sm transition-all">
+            <span class="block text-xs text-emerald-200">Day 1</span>
+            <span class="block font-bold text-sm">3/10</span>
+          </button>
+          <button onclick="switchDay(2)" class="day-btn flex-none w-14 py-2 rounded-xl text-center bg-gray-100 text-gray-500 transition-all">
+            <span class="block text-xs">Day 2</span>
+            <span class="block font-bold text-sm">3/11</span>
+          </button>
+          <button onclick="switchDay(7)" class="day-btn flex-none w-14 py-2 rounded-xl text-center bg-gray-100 text-gray-500 transition-all">
+            <span class="block text-xs">Day 7</span>
+            <span class="block font-bold text-sm">3/16</span>
+          </button>
+        </div>
+
+        <div class="bg-gradient-to-br from-sky-400 to-blue-500 text-white rounded-2xl p-4 shadow-md relative">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-xs bg-white/20 px-2.5 py-1 rounded-full backdrop-blur-sm" id="weather-city">BUSAN CITY</span>
+              <h2 class="text-xl font-bold mt-2" id="weather-desc">晴朗無雲</h2>
+            </div>
+            <div class="text-right">
+              <span class="text-4xl font-extrabold" id="weather-temp">13°</span>
+              <p class="text-xs text-sky-100">5° / 13°</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-4 gap-2 mt-4 text-center text-xs border-t border-white/20 pt-3">
+            <div><p class="text-sky-100">降雨率</p><p class="font-bold">0%</p></div>
+            <div><p class="text-sky-100">風力</p><p class="font-bold">2級</p></div>
+            <div><p class="text-sky-100">日出</p><p class="font-bold">06:45</p></div>
+            <div><p class="text-sky-100">倒數</p><p class="font-bold text-amber-300">91天</p></div>
+          </div>
+          <div class="mt-3 bg-white/10 rounded-xl p-2.5 text-xs flex gap-2 items-center">
+            <i class="fa-solid fa-shirt text-amber-200 text-base"></i>
+            <p id="weather-advice">抵達首日天氣晴朗，早晚溫差大，建議洋蔥式穿搭。</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 shadow-sm">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-gray-700"><i class="fa-solid fa-calendar-day mr-1 text-[#2E5A44]"></i> 當日行程</h3>
+            <button onclick="openModal('itinerary')" class="text-xs bg-[#2E5A44] text-white px-2.5 py-1 rounded-full"><i class="fa-solid fa-plus"></i> 新增</button>
+          </div>
+          <div class="relative border-l-2 border-emerald-100 pl-4 ml-2 space-y-6" id="itinerary-list">
+            </div>
+        </div>
+      </section>
+
+      <section id="tab-reservations" class="space-y-4 hidden">
+        <div class="flex gap-2 bg-gray-100 p-1 rounded-xl">
+          <button onclick="switchResSubTab('flight')" class="res-sub-btn flex-1 py-1.5 text-xs font-medium rounded-lg bg-white text-emerald-800 shadow-sm">機票</button>
+          <button onclick="switchResSubTab('hotel')" class="res-sub-btn flex-1 py-1.5 text-xs font-medium rounded-lg text-gray-500">住宿</button>
+          <button onclick="switchResSubTab('car')" class="res-sub-btn flex-1 py-1.5 text-xs font-medium rounded-lg text-gray-500">租車</button>
+        </div>
+
+        <div id="res-flight" class="res-card space-y-3">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-emerald-50">
+            <div class="flex justify-between items-center border-b pb-2 mb-3">
+              <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded">釜山航空 BX 796</span>
+              <span class="text-xs text-gray-400">2026/03/10</span>
+            </div>
+            <div class="flex justify-between items-center text-center">
+              <div>
+                <span class="text-2xl font-bold text-gray-800">KHH</span>
+                <p class="text-xs text-gray-500">高雄 15:00</p>
+              </div>
+              <div class="flex-1 px-4 relative flex flex-col items-center">
+                <span class="text-[10px] text-gray-400">02h 25m</span>
+                <div class="w-full border-t border-dashed border-gray-300 my-1 relative">
+                  <i class="fa-solid fa-plane text-emerald-600 absolute -top-2 left-1/2 -translate-x-1/2 bg-white px-1 text-xs"></i>
+                </div>
+              </div>
+              <div>
+                <span class="text-2xl font-bold text-gray-800">PUS</span>
+                <p class="text-xs text-gray-500">釜山 18:25</p>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t grid grid-cols-2 gap-2 text-xs text-gray-600">
+              <div><i class="fa-solid fa-suitcase mr-1"></i> 行李額度: 15kg</div>
+              <div><i class="fa-solid fa-money-bill-wave mr-1"></i> NT$ 4,633</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="res-hotel" class="res-card space-y-3 hidden">
+          <div class="bg-white rounded-2xl p-4 shadow-sm overflow-hidden border border-gray-100">
+            <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=600&auto=format&fit=crop&q=60" alt="Hotel" class="w-full h-32 object-cover rounded-xl mb-3">
+            <h4 class="font-bold text-gray-800">Avani Central Busan</h4>
+            <p class="text-xs text-gray-500 mb-2"><i class="fa-solid fa-location-dot"></i> 133 Jeonpo-daero, Nam-gu</p>
+            <div class="grid grid-cols-2 gap-2 text-xs border-t pt-2 mt-2 text-gray-600">
+              <div><strong>入住：</strong>03/10 15:00</div>
+              <div><strong>退房：</strong>03/16 11:00</div>
+            </div>
+            <div class="bg-emerald-50 rounded-xl p-2.5 mt-3 text-xs text-emerald-800 flex justify-between">
+              <span>總額 6晚：NT$ 5,000</span>
+              <span class="font-bold">每人分攤：NT$ 1,667</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="res-car" class="res-card space-y-3 hidden">
+          <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center border-b pb-2 mb-3">
+              <span class="font-bold text-gray-800">樂天租車</span>
+              <span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">預約號: RWJD-5223</span>
+            </div>
+            <div class="space-y-2 text-xs text-gray-600">
+              <p><i class="fa-solid fa-calendar mr-1 text-gray-400"></i> <strong>取車：</strong>2026/03/10 15:30 (濟州)</p>
+              <p><i class="fa-solid fa-calendar mr-1 text-gray-400"></i> <strong>還車：</strong>2026/03/24 08:00 (濟州)</p>
+              <p><i class="fa-solid fa-car mr-1 text-gray-400"></i> <strong>天數：</strong>14 天行程 (4人分攤)</p>
+            </div>
+            <div class="bg-amber-50 rounded-xl p-2.5 mt-3 text-xs text-amber-800 flex justify-between">
+              <span>總金額：₩50,000 (≈ NT$1,200)</span>
+              <span class="font-bold">人均：NT$ 300</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-expenses" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl p-4 shadow-md border border-emerald-100">
+          <h3 class="font-bold text-gray-700 mb-3"><i class="fa-solid fa-calculator text-emerald-700 mr-1"></i> 新增消費項目</h3>
+          <div class="space-y-3">
+            <div class="flex gap-2">
+              <input type="number" id="exp-amount" placeholder="金額" class="flex-1 border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <select id="exp-currency" class="border rounded-xl px-2 py-2 text-sm focus:outline-none bg-gray-50">
+                <option value="KRW">KRW 韓元</option>
+                <option value="TWD">TWD 台幣</option>
+              </select>
+            </div>
+            <input type="text" id="exp-title" placeholder="品項名稱 (如：飲料、綠茶)" class="w-full border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <div class="flex gap-2">
+              <input type="text" id="exp-location" placeholder="地點 (選填，如：GS25)" class="flex-1 border rounded-xl px-3 py-1.5 text-xs focus:outline-none">
+              <select id="exp-pay-type" class="border rounded-xl px-2 py-1.5 text-xs bg-gray-50 focus:outline-none">
+                <option value="現金">現金</option>
+                <option value="信用卡">信用卡</option>
+                <option value="WOWPASS">WOWPASS</option>
+              </select>
+            </div>
+            <button onclick="addExpense()" class="w-full bg-[#2E5A44] hover:bg-emerald-800 text-white font-bold py-2 rounded-xl text-sm transition-colors shadow-sm">記一筆</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 shadow-sm">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="font-bold text-gray-700">消費明細</h4>
+            <div class="text-right">
+              <p class="text-[10px] text-gray-400">總支出折合</p>
+              <p class="text-lg font-extrabold text-emerald-700" id="total-expense-display">NT$ 0</p>
+            </div>
+          </div>
+          <div class="space-y-3" id="expense-list">
+            </div>
+        </div>
+      </section>
+
+      <section id="tab-journal" class="space-y-4 hidden">
+        <div class="bg-white rounded-2xl p-4 shadow-sm">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-gray-700"><i class="fa-solid fa-pen-to-square text-[#2E5A44] mr-1"></i> 旅行日誌</h3>
+            <button onclick="openModal('journal')" class="text-xs bg-[#2E5A44] text-white px-2.5 py-1 rounded-full"><i class="fa-solid fa-plus"></i> 寫日誌</button>
+          </div>
+          <div class="space-y-4" id="journal-list">
+            </div>
+        </div>
+      </section>
+
+      <section id="tab-checklist" class="space-y-4 hidden">
+        <div class="flex gap-2 overflow-x-auto no-scrollbar py-1">
+          <button onclick="switchChecklistSub('todo')" class="check-sub-btn flex-none px-4 py-1.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">特辦待辦</button>
+          <button onclick="switchChecklistSub('pack')" class="check-sub-btn flex-none px-4 py-1.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-500">行李清單</button>
+          <button onclick="switchChecklistSub('wish')" class="check-sub-btn flex-none px-4 py-1.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-500">想去地點</button>
+        </div>
+
+        <div class="flex gap-2">
+          <input type="text" id="new-todo-input" placeholder="新增待辦/行李/想去品項..." class="flex-1 border rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          <button onclick="addChecklistItem()" class="bg-[#2E5A44] text-white px-4 rounded-xl text-sm font-bold"><i class="fa-solid fa-plus"></i></button>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 shadow-sm">
+          <ul id="checklist-container" class="space-y-3">
+            </ul>
+        </div>
+      </section>
+
+    </main>
+
+    <nav class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-2.5 px-2 z-50">
+      <button onclick="switchTab('itinerary', this)" class="nav-btn flex flex-col items-center gap-1 text-[#2E5A44]">
+        <i class="fa-solid fa-compass text-lg"></i>
+        <span class="text-[10px] font-medium">行程</span>
+      </button>
+      <button onclick="switchTab('reservations', this)" class="nav-btn flex flex-col items-center gap-1 text-gray-400">
+        <i class="fa-solid fa-ticket text-lg"></i>
+        <span class="text-[10px] font-medium">預訂</span>
+      </button>
+      <button onclick="switchTab('expenses', this)" class="nav-btn flex flex-col items-center gap-1 text-gray-400">
+        <i class="fa-solid fa-wallet text-lg"></i>
+        <span class="text-[10px] font-medium">記帳</span>
+      </button>
+      <button onclick="switchTab('journal', this)" class="nav-btn flex flex-col items-center gap-1 text-gray-400">
+        <i class="fa-solid fa-book text-lg"></i>
+        <span class="text-[10px] font-medium">日誌</span>
+      </button>
+      <button onclick="switchTab('checklist', this)" class="nav-btn flex flex-col items-center gap-1 text-gray-400">
+        <i class="fa-solid fa-clipboard-check text-lg"></i>
+        <span class="text-[10px] font-medium">準備</span>
+      </button>
+    </nav>
+
+    <div id="modal-itinerary" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-4">
+        <h3 class="font-bold text-lg text-gray-800">新增今日行程</h3>
+        <input type="time" id="itinerary-time" class="w-full border rounded-xl p-2.5 text-sm">
+        <input type="text" id="itinerary-title-input" placeholder="活動項目 (例：飛機起飛)" class="w-full border rounded-xl p-2.5 text-sm">
+        <input type="text" id="itinerary-desc" placeholder="附註 (例：不要遲到)" class="w-full border rounded-xl p-2.5 text-sm">
+        <div class="flex gap-2">
+          <button onclick="closeModal('itinerary')" class="flex-1 bg-gray-100 py-2 rounded-xl text-sm font-semibold text-gray-600">取消</button>
+          <button onclick="saveItinerary()" class="flex-1 bg-[#2E5A44] text-white py-2 rounded-xl text-sm font-semibold">儲存</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-journal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-4">
+        <h3 class="font-bold text-lg text-gray-800">寫下今日回憶</h3>
+        <textarea id="journal-text" rows="4" placeholder="今天發生了什麼有趣的事..." class="w-full border rounded-xl p-2.5 text-sm"></textarea>
+        <div class="flex gap-2">
+          <button onclick="closeModal('journal')" class="flex-1 bg-gray-100 py-2 rounded-xl text-sm font-semibold text-gray-600">取消</button>
+          <button onclick="saveJournal()" class="flex-1 bg-[#2E5A44] text-white py-2 rounded-xl text-sm font-semibold">保存</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ================= 初始化核心狀態與假資料 =================
+    const users = [
+      { name: '凱文', color: 'bg-rose-500', img: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Kevin' },
+      { name: '尼歐', color: 'bg-indigo-500', img: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Neo' },
+      { name: '小羊', color: 'bg-amber-500', img: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Lamb' },
+      { name: '大俠', color: 'bg-emerald-500', img: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Hero' }
+    ];
+
+    let currentUser = '凱文';
+    let currentDay = 1;
+    let activeChecklistTab = 'todo';
+
+    // 匯率設定：1 韓元 ≈ 0.024 台幣
+    const KRW_TO_TWD = 0.024;
+
+    // 行程假資料庫 (LocalStorage 取值或預設)
+    let itineraryData = JSON.parse(localStorage.getItem('itineraryData')) || {
+      1: [
+        { time: '12:00', title: '機場集合', desc: '小港機場 - 不要遲到，遲到的人要被遺棄' },
+        { time: '15:00', title: '飛機起飛', desc: '小港機場 - 釜山航空' },
+        { time: '18:25', title: '抵達釜山', desc: '釜山機場' },
+        { time: '19:00', title: '購買 WOWPASS', desc: '於地鐵站機台購買' }
+      ]
+    };
+
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [
+      { id: 1, user: '尼歐', title: '飲料', amount: 5000, currency: 'KRW', payType: '現金', date: '2026-03-10', location: 'GS25' },
+      { id: 2, user: '小羊', title: '早餐', amount: 7000, currency: 'KRW', payType: '信用卡', date: '2026-03-10', location: '外帶' }
+    ];
+
+    let journals = JSON.parse(localStorage.getItem('journals')) || [
+      { user: '尼歐', text: '訂好濟州島住宿，超級期待！', date: '2026-03-08' },
+      { user: '凱文', text: '申辦國際駕照搞定，這次換我當司機。', date: '2026-03-05' }
+    ];
+
+    let checklists = JSON.parse(localStorage.getItem('checklists')) || {
+      todo: [
+        { id: 1, title: '申辦國際駕照', checkedUsers: ['凱文', '尼歐'] },
+        { id: 2, title: '保旅遊平安險', checkedUsers: ['小羊'] }
+      ],
+      pack: [
+        { id: 3, title: 'RX100 相機', checkedUsers: ['凱文'] },
+        { id: 4, title: '電腦充電器', checkedUsers: ['尼歐'] }
+      ],
+      wish: [
+        { id: 5, title: '釜山海雲台烤肉', checkedUsers: [] }
+      ]
+    };
+
+    // ================= 核心渲染邏輯 =================
+    window.onload = function() {
+      renderAvatars();
+      renderItineraries();
+      renderExpenses();
+      renderJournals();
+      renderChecklist();
+    };
+
+    // 儲存狀態至本地
+    function saveData() {
+      localStorage.setItem('itineraryData', JSON.stringify(itineraryData));
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+      localStorage.setItem('journals', JSON.stringify(journals));
+      localStorage.setItem('checklists', JSON.stringify(checklists));
+    }
+
+    // 渲染成員頭像
+    function renderAvatars() {
+      const container = document.getElementById('member-avatars');
+      container.innerHTML = users.map(u => `
+        <div class="w-7 h-7 rounded-full border-2 border-white overflow-hidden ${u.color} shadow" title="${u.name}">
+          <img src="${u.img}" alt="${u.name}">
+        </div>
+      `).join('');
+    }
+
+    // 切換當前使用者
+    function switchUser(userName) {
+      currentUser = userName;
+      renderChecklist(); // 行李核對與勾選機制與當前使用者關聯
+    }
+
+    // Tab 切換
+    function switchTab(tabId, btn) {
+      // 隱藏所有 tab 區段
+      document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+      // 顯示目標 tab
+      document.getElementById('tab-' + tabId).classList.remove('hidden');
+      
+      // 更新按鈕樣式
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.remove('text-[#2E5A44]');
+        b.classList.add('text-gray-400');
+      });
+      btn.classList.add('text-[#2E5A44]');
+      btn.classList.remove('text-gray-400');
+    }
+
+    // ================= 行程系統 =================
+    function switchDay(dayNum) {
+      currentDay = dayNum;
+      // 改變按鈕高亮
+      document.querySelectorAll('.day-btn').forEach((btn, index) => {
+        if (index + 1 === dayNum || (dayNum === 7 && index === 2)) {
+          btn.classList.add('bg-[#2E5A44]', 'text-white');
+          btn.classList.remove('bg-gray-100', 'text-gray-500');
+        } else {
+          btn.classList.remove('bg-[#2E5A44]', 'text-white');
+          btn.classList.add('bg-gray-100', 'text-gray-500');
+        }
+      });
+      // 更新氣象描述 (模擬切換地區效果)
+      if (dayNum === 7) {
+        document.getElementById('weather-city').innerText = "JEJU ISLAND";
+        document.getElementById('weather-desc').innerText = "多雲時晴";
+        document.getElementById('weather-temp').innerText = "15°";
+        document.getElementById('weather-advice').innerText = "今日移動到濟州島，風力偏大，請注意頭部保暖。";
+      } else {
+        document.getElementById('weather-city').innerText = "BUSAN CITY";
+        document.getElementById('weather-desc').innerText = "晴朗無雲";
+        document.getElementById('weather-temp').innerText = "13°";
+        document.getElementById('weather-advice').innerText = "抵達首日天氣晴朗，早晚溫差大，建議洋蔥式穿搭。";
+      }
+      renderItineraries();
+    }
+
+    function renderItineraries() {
+      const list = document.getElementById('itinerary-list');
+      const dayData = itineraryData[currentDay] || [];
+      if (dayData.length === 0) {
+        list.innerHTML = `<p class="text-xs text-gray-400 py-4">今天還沒有安排行程喔！</p>`;
+        return;
+      }
+      list.innerHTML = dayData.map(item => `
+        <div class="relative group">
+          <div class="absolute -left-6 top-1.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white ring-4 ring-emerald-50"></div>
+          <span class="text-[10px] font-semibold text-emerald-700">${item.time}</span>
+          <h4 class="font-bold text-sm text-gray-800">${item.title}</h4>
+          <p class="text-xs text-gray-400 mt-0.5">${item.desc}</p>
+        </div>
+      `).join('');
+    }
+
+    // ================= 預訂管理子分頁 =================
+    function switchResSubTab(type) {
+      document.querySelectorAll('.res-card').forEach(card => card.classList.add('hidden'));
+      document.getElementById('res-' + type).classList.remove('hidden');
+
+      document.querySelectorAll('.res-sub-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-emerald-800', 'shadow-sm');
+        btn.classList.add('text-gray-500');
+      });
+      event.target.classList.add('bg-white', 'text-emerald-800', 'shadow-sm');
+    }
+
+    // ================= 記帳系統 =================
+    function renderExpenses() {
+      const container = document.getElementById('expense-list');
+      let totalTWD = 0;
+
+      container.innerHTML = expenses.map(exp => {
+        const valInTWD = exp.currency === 'KRW' ? Math.round(exp.amount * KRW_TO_TWD) : exp.amount;
+        totalTWD += valInTWD;
+        const userObj = users.find(u => u.name === exp.user) || users[0];
+
+        return `
+          <div class="flex items-center justify-between border-b pb-2 last:border-0">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full overflow-hidden ${userObj.color}">
+                <img src="${userObj.img}" alt="${exp.user}">
+              </div>
+              <div>
+                <p class="text-sm font-bold text-gray-800">${exp.title}</p>
+                <span class="text-[10px] text-gray-400">${exp.user} | ${exp.payType} | ${exp.location || '未知'}</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-bold">${exp.currency === 'KRW' ? '₩' : 'NT$'}${exp.amount.toLocaleString()}</p>
+              <p class="text-[10px] text-gray-400">≈ NT$ ${valInTWD}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('total-expense-display').innerText = `NT$ ${totalTWD.toLocaleString()}`;
+    }
+
+    function addExpense() {
+      const amtInput = document.getElementById('exp-amount');
+      const titleInput = document.getElementById('exp-title');
+      const currency = document.getElementById('exp-currency').value;
+      const payType = document.getElementById('exp-pay-type').value;
+      const location = document.getElementById('exp-location').value;
+
+      if (!amtInput.value || !titleInput.value) return alert('請輸入金額與品項名稱！');
+
+      expenses.unshift({
+        id: Date.now(),
+        user: currentUser,
+        title: titleInput.value,
+        amount: parseFloat(amtInput.value),
+        currency: currency,
+        payType: payType,
+        location: location,
+        date: new Date().toISOString().split('T')[0]
+      });
+
+      saveData();
+      renderExpenses();
+
+      // 清空輸入
+      amtInput.value = '';
+      titleInput.value = '';
+      document.getElementById('exp-location').value = '';
+    }
+
+    // ================= 日誌系統 =================
+    function renderJournals() {
+      const container = document.getElementById('journal-list');
+      container.innerHTML = journals.map(j => {
+        const userObj = users.find(u => u.name === j.user) || users[0];
+        return `
+          <div class="bg-gray-50 rounded-xl p-3 border border-gray-100">
+            <div class="flex items-center gap-2 mb-1.5">
+              <div class="w-6 h-6 rounded-full overflow-hidden ${userObj.color}">
+                <img src="${userObj.img}" alt="">
+              </div>
+              <span class="text-xs font-bold text-gray-700">${j.user}</span>
+              <span class="text-[10px] text-gray-400 ml-auto">${j.date}</span>
+            </div>
+            <p class="text-xs text-gray-600 leading-relaxed">${j.text}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================= 準備清單 & 勾選機制 =================
+    function switchChecklistSub(type) {
+      activeChecklistTab = type;
+      document.querySelectorAll('.check-sub-btn').forEach(btn => {
+        btn.classList.remove('bg-emerald-100', 'text-emerald-800');
+        btn.classList.add('bg-gray-100', 'text-gray-500');
+      });
+      event.target.classList.add('bg-emerald-100', 'text-emerald-800');
+      renderChecklist();
+    }
+
+    function renderChecklist() {
+      const container = document.getElementById('checklist-container');
+      const items = checklists[activeChecklistTab] || [];
+
+      container.innerHTML = items.map(item => {
+        // 確認目前的使用者是否已勾選此項
+        const isCheckedByMe = item.checkedUsers.includes(currentUser);
+        
+        // 渲染每個成員的勾選狀態
+        const memberStatus = users.map(u => {
+          const isDone = item.checkedUsers.includes(u.name);
+          return `
+            <span class="text-[10px] px-1.5 py-0.5 rounded ${isDone ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-400'}">
+              ${isDone ? '✓' : '✗'} ${u.name}
+            </span>
+          `;
+        }).join('');
+
+        return `
+          <li class="flex flex-col gap-1.5 p-2 rounded-xl border border-gray-50 bg-gray-50/50">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" ${isCheckedByMe ? 'checked' : ''} 
+                       onclick="toggleCheck(${item.id})"
+                       class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300">
+                <span class="text-sm font-semibold ${isCheckedByMe ? 'line-through text-gray-400' : 'text-gray-700'}">${item.title}</span>
+              </div>
+              <button onclick="deleteChecklistItem(${item.id})" class="text-xs text-rose-400 hover:text-rose-600"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+            <div class="flex gap-1 flex-wrap">
+              ${memberStatus}
+            </div>
+          </li>
+        `;
+      }).join('');
+    }
+
+    function toggleCheck(id) {
+      const item = checklists[activeChecklistTab].find(i => i.id === id);
+      if (item) {
+        if (item.checkedUsers.includes(currentUser)) {
+          // 如果勾選過了就移除
+          item.checkedUsers = item.checkedUsers.filter(u => u !== currentUser);
+        } else {
+          // 沒勾選過就加入
+          item.checkedUsers.push(currentUser);
+        }
+        saveData();
+        renderChecklist();
+      }
+    }
+
+    function addChecklistItem() {
+      const input = document.getElementById('new-todo-input');
+      if (!input.value) return;
+
+      checklists[activeChecklistTab].push({
+        id: Date.now(),
+        title: input.value,
+        checkedUsers: []
+      });
+
+      saveData();
+      renderChecklist();
+      input.value = '';
+    }
+
+    function deleteChecklistItem(id) {
+      checklists[activeChecklistTab] = checklists[activeChecklistTab].filter(i => i.id !== id);
+      saveData();
+      renderChecklist();
+    }
+
+    // ================= 彈出視窗開關 & 儲存 =================
+    function openModal(type) {
+      document.getElementById('modal-' + type).classList.remove('hidden');
+    }
+
+    function closeModal(type) {
+      document.getElementById('modal-' + type).classList.add('hidden');
+    }
+
+    function saveItinerary() {
+      const time = document.getElementById('itinerary-time').value;
+      const title = document.getElementById('itinerary-title-input').value;
+      const desc = document.getElementById('itinerary-desc').value;
+
+      if (!time || !title) return alert('請填寫完整行程時間與內容');
+
+      if (!itineraryData[currentDay]) itineraryData[currentDay] = [];
+      
+      itineraryData[currentDay].push({ time, title, desc });
+      itineraryData[currentDay].sort((a, b) => a.time.localeCompare(b.time)); // 依時間自動排序
+
+      saveData();
+      renderItineraries();
+      closeModal('itinerary');
+
+      // 清空輸入框
+      document.getElementById('itinerary-time').value = '';
+      document.getElementById('itinerary-title-input').value = '';
+      document.getElementById('itinerary-desc').value = '';
+    }
+
+    function saveJournal() {
+      const text = document.getElementById('journal-text').value;
+      if (!text) return alert('請輸入內容');
+
+      journals.unshift({
+        user: currentUser,
+        text: text,
+        date: new Date().toISOString().split('T')[0]
+      });
+
+      saveData();
+      renderJournals();
+      closeModal('journal');
+      document.getElementById('journal-text').value = '';
+    }
+  </script>
+</body>
+</html>
